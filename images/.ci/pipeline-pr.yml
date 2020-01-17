@@ -32,6 +32,9 @@ jobs:
           sudo apt install jq -y
 
   - bash: |
+          cd $(system.defaultWorkingDirectory)
+          pwd
+          ls -la
           inspec check $(system.defaultWorkingDirectory)/../tests/local/common --chef-license=accept-silent
 
   - bash: |
