@@ -1,0 +1,41 @@
+trigger:
+  branches:
+   include:
+   - master
+  paths:
+   exclude:
+   - README.adoc
+   - Vagrantfile
+
+pr: none
+
+variables:
+- group: vault-packer-build
+
+jobs:
+- job: build_vault
+  pool:
+    vmImage: 'Ubuntu-18.04'
+  steps:
+  - task: riezebosch.Packer.PackerTool.PackerTool@0
+    displayName: 'Use Packer'
+    inputs:
+      version: $(PACKER_VERSION)
+
+  - bash: |
+          sudo apt update -y
+          sudo apt install -y ruby ruby-dev libffi-dev build-essential
+          sudo gem install inspec-bin ed25519 bcrypt_pbkdf --no-rdoc --no-ri inspec-bin
+
+  - bash: |
+          cd $(system.defaultWorkingDirectory)/
+          packer build \
+          -only=azure \
+          --var-file=./variables-pipeline.json \
+          -var "git_ref=$(git rev-parse --abbrev-ref HEAD)" \
+          -var "git_commit_sha=$(git rev-parse --short HEAD)" \
+          -var "client_id=$(ARM_CLIENT_ID)" \
+          -var "client_secret=$(ARM_CLIENT_SECRET)" \
+          -var "build_resource_group_name=$(ARM_RESOURCE_GROUP)" \
+          -var "managed_image_resource_group_name=$(ARM_RESOURCE_GROUP)" \
+          build.json

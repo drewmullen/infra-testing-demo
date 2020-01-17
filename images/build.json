@@ -1,0 +1,149 @@
+{
+    "variables": {
+        "working_dir": "./",
+        "vm_size": "Standard_F4s_v2",
+        "client_id": "{{env `ARM_CLIENT_ID`}}",
+        "client_secret": "{{env `ARM_CLIENT_SECRET`}}",
+        "dest_subscription_id": "{{env `ARM_SUBSCRIPTION_ID`}}",
+        "tenant_id": "{{env `ARM_TENANT_ID`}}",
+        "build_resource_group_name": "{{env `ARM_RESOURCE_GROUP`}}",
+        "managed_image_resource_group_name": "{{env `ARM_RESOURCE_GROUP`}}",
+        "os_disk_size_gb": "100",
+        "sig_replication_regions": "East US",
+        "sig_name": "infra_testing_demo"
+    },
+    "min_packer_version": "1.4.5",
+    "builders": [
+        {
+            "name": "azure",
+            "type": "azure-arm",
+            "client_id": "{{user `client_id`}}",
+            "client_secret": "{{user `client_secret`}}",
+            "subscription_id": "{{user `dest_subscription_id`}}",
+            "tenant_id": "{{user `tenant_id`}}",
+            "build_resource_group_name": "{{user `build_resource_group_name`}}",
+            "managed_image_resource_group_name": "{{user `managed_image_resource_group_name`}}",
+            "managed_image_name": "vault-{{user `git_commit_sha`}}",
+            "vm_size": "{{user `vm_size`}}",
+            "os_type": "Linux",
+            "os_disk_size_gb": "{{user `os_disk_size_gb`}}",
+            "image_publisher":"OpenLogic",
+            "image_offer": "CentOS",
+            "image_sku": "7.5",
+            "image_version": "latest",
+            "shared_image_gallery_destination": {
+                "resource_group": "{{user `managed_image_resource_group_name`}}",
+                "gallery_name": "{{user `sig_name`}}",
+                "image_name": "vault",
+                "image_version": "{{user `sig_version`}}",
+                "replication_regions": "{{user `sig_replication_regions`}}"
+            },
+            "shared_image_gallery_timeout": "120m"
+        },
+        {
+            "type": "vagrant",
+            "name": "vagrant",
+            "source_path": "bento/centos-7",
+            "skip_add": true,
+            "provider": "virtualbox",
+            "communicator": "ssh",
+            "add_force": true
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "inline": [
+                "echo Create required folders...",
+                "mkdir -m777 -p {/tmp/packer-files,/opt/chef/inspec}",
+                "echo Completed creating install folder"
+            ]
+        },
+        {
+            "type": "file",
+            "source": "{{pwd}}/files/",
+            "destination": "/tmp/packer-files/"
+        },
+        {
+            "type": "file",
+            "source": "{{pwd}}/tests/local/",
+            "destination": "/opt/chef/inspec/"
+        },
+        {
+            "type": "shell",
+            "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "scripts": [
+                "{{pwd}}/scripts/0-prereqs.sh"
+            ]
+        },
+        {
+            "type": "shell",
+            "environment_vars": [
+                "VAULT_DOWNLOAD_URL={{user `vault_download_url`}}"
+            ],
+            "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "script": "{{pwd}}/scripts/1-install-vault.sh"
+        },
+        {
+            "type": "shell",
+            "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "scripts": [
+                "{{pwd}}/scripts/5-td-agent-bit.sh",
+                "{{pwd}}/scripts/6-telegraf.sh",
+                "{{pwd}}/scripts/7-azure-cli.sh",
+                "{{pwd}}/scripts/8-install-inspec.sh"
+            ]
+        },
+        {
+            "type": "shell",
+            "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "inline": [
+                "chmod 0775 /tmp/packer-files/run_inspec.sh",
+                "cp /tmp/packer-files/inspec.service /etc/systemd/system/",
+                "cp /tmp/packer-files/inspec.timer /etc/systemd/system/",
+                "cp /tmp/packer-files/run_inspec.sh /opt/chef/inspec/run_inspec.sh",
+                "if [ -x \"$(command -v /usr/local/bin/vault)\" ]; then     echo \"role: consul\" > /opt/chef/inspec/role.yml;   else     echo \"role: vault\" > /opt/chef/inspec/role.yml;   fi",
+                "chmod 0644 /etc/systemd/system/insp*",
+                "systemctl enable inspec.timer",
+                "systemctl start inspec.timer"
+            ]
+        },
+        {
+            "type": "shell",
+            "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+            "except":[
+                "vagrant"
+            ],
+            "inline": [
+                "sed -i 's/^Provisioning.DecodeCustomData=.*$/Provisioning.DecodeCustomData=y/' /etc/waagent.conf",
+                "sed -i 's/^Provisioning.ExecuteCustomData=.*$/Provisioning.ExecuteCustomData=y/' /etc/waagent.conf",
+                "sed -e 's/^ResourceDisk.EnableSwap=.*$/ResourceDisk.EnableSwap=n/' -e 's/^ResourceDisk.SwapSizeMB=.*$/ResourceDisk.SwapSizeMB=0/' -i /etc/waagent.conf"
+            ]
+        },
+        {
+            "type": "inspec",
+            "only": [
+                "azure"
+            ],
+            "profile": "./tests/packer/vault",
+            "extra_arguments": [
+                "--chef-license=accept-silent",
+                "--sudo"
+            ]
+        },
+        {
+            "execute_command": "{{ .Vars }} sudo -S -E sh '{{ .Path }}'",
+            "except":[
+                "vagrant"
+            ],
+            "inline": [
+                "/usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync"
+            ],
+            "inline_shebang": "/bin/sh -x",
+            "type": "shell",
+            "skip_clean": true
+        }
+
+    ]
+}

@@ -1,0 +1,10 @@
+images/variables-local.json
+**.vagrant
+**inspec.lock
+**.tfvars
+**output-vagrant
+images/common
+images/build_runner.json
+images/build_copy.json
+**.tfstate*
+**.terraform

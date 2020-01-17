@@ -1,0 +1,168 @@
+= Packer scripts for Vault and Consul in Azure
+
+== Build instructions
+
+. Notes
+
+=== Baking images with Packer
+
+. Create a `variables-local.json` file with config vars.
+
+----
+
+{
+    "client_secret": "",
+    "client_id": "",
+    "dest_subscription_id": "",
+    "tenant_id": "",
+    "build_resource_group_name": "",
+    "managed_image_resource_group_name": "",
+    "git_commit_sha": "",
+    "git_ref": "personal",
+    "vault_download_url": "",
+    "consul_download_url": "",
+    "runner_download_url": "",
+    "terraform_download_url": "",
+    "consul_version_number": "",
+    "vault_version_number": "",
+    "sig_version": "0.0.1",
+    "environment": "personal",
+    "pat_token": "",
+    "agent_name": "",
+    "sig_replication_regions": "East US"
+}
+----
+
+== Contributing to these images.
+
+All changes made by packer must have corresponding inspec tests. In order to easily verify your changes and the tests, please use the Vagrant Boxes via Virtualbox to apply your changes then execute your tests locally.
+
+=== Local build via Vagrant with Virtualbox:
+
+Requirements:
+
+ 1. Virtualbox
+ 2. Vagrant
+ 3. Inspec
+
+ vagrant box add bento/centos-7 --insecure --provider=virtualbox
+ vagrant up --provision
+
+=== Execute inspec tests against Vagrant VMs
+
+Vagrant makes consul available at `2222` and vault `2200`. Each have their own respective private key
+
+ cd packer-azure-vault
+ inspec exec tests/packer/vault -t ssh://vagrant@127.0.0.1:2200 -i .vagrant/machines/vault/virtualbox/private_key --sudo --chef-license=accept-silent
+ inspec exec tests/packer/consul -t ssh://vagrant@127.0.0.1:2222 -i .vagrant/machines/consul/virtualbox/private_key --sudo --chef-license=accept-silent
+
+=== IMPORTANT: Lint updates made to local instances Inspec tests
+
+ inspec check tests/local/common --chef-license=accept-silent
+
+
+== Build
+
+. Build both images:
+
+ packer build --var-file=./variables-local.json -var "git_ref=$(git rev-parse --abbrev-ref HEAD)" -var "git_commit_sha=$(git rev-parse --short HEAD)" build.json
+
+ 
+. Build one image:
+  
+ packer build -only="Vault Image" --var-file=./variables-local.json -var "git_ref=$(git rev-parse --abbrev-ref HEAD)" -var "git_commit_sha=$(git rev-parse --short HEAD)" build.json
+
+== Variables
+
+As part of this build you'll need to create a variables.json file. Below we have an explanation of all variables used, their defaults if applicable, followed by a list of recommended vars for your variables-local.json file
+
+=== All Variables
+
+* **source_image_subscription** -> `shared_image_gallery: {"subscription"}`
+    - description: subscription of the shared image gallery
+    - default: 
+* **source_image_resource_group** -> `shared_image_gallery: {"resource_group"}`
+    - description: resource group of the shared image gallery
+    - default: 
+* **source_image_gallery_name** -> `shared_image_gallery: {"gallery_name"}`
+    - description: name of the shared image gallery
+    - default: SIG_West
+* **source_image_name** -> `shared_image_gallery: {"image_name"}`
+    - description: name of the image in the gallery you want as a base
+    - default: AZU_CENTOS_Base
+* **source_image_version** -> `shared_image_gallery: {"image_version"}`
+    - description: version of the image in the gallery you want as a base
+    - default: 
+* **ssh_pty** 
+    - description: if `requiretty` is set on host, this option allows the use of sudo
+    - default: "true"
+* **client_id** 
+    - description: this id must have access to both read from shared gallery and write to the build resource group
+    - default: {{env `ARM_CLIENT_ID`}}
+* **client_secret** 
+    - description: secret for the client id
+    - default: {{env `ARM_CLIENT_SECRET`}}
+* **dest_subscription_id** -> `subscription_id`
+    - description: destination subscription for the image
+    - default:
+* **tenant_id** 
+    - description: tenant id
+    - default: {{env `ARM_TENANT_ID`}}
+* **working_dir** 
+    - description:
+    - default: ./
+* **vm_size** 
+    - description:
+    - default: "Standard_DS2_v2"
+* **build_resource_group_name** 
+    - description: resource group where packer will deploy vms to build your image. this is likely the same as dest_image_resource_group_name
+    - default:
+* **dest_image_resource_group_name** -> `managed_image_resource_group_name`
+    - description: destination resource group for your built image
+    - default: 
+* **dest_image_name** -> `managed_image_name`
+    - description: name of the image
+    - default: {{user `image_app_name`}}-{{user `git_commit_sha`}}
+* **vault_download_url** 
+    - description: url of the link:
+    - default:
+* **consul_download_url** 
+    - description: url of the link:
+    - default: 
+* **vault_version_number** 
+    - description: version number of the app. ex: "vault 1.1.2 +prem" should be "1.1.2"
+    - default:
+* **consul_version_number** 
+    - description: version number of the app. ex: "consul 1.5.0 +prem" should be "1.5.0"
+    - default:
+* **vault_package** 
+    - description: full name of the vault package installed
+    - default: vault-enterprise_{{user `vault_version_number`}}+prem
+* **image_app_name** 
+    - description: name of app image. **lower case please**
+    - choices: vault, consul
+    - default: <repective of each app build definition>
+* **git_commit_sha** 
+    - description: **short** commit hash for packer build code you're using. a short commit is the first 7 characters of a full commit hash. you can get this value from: `git rev-parse --short HEAD`
+    - default:
+* **git_ref** 
+    - description: You can get this value from: `git rev-parse --abbrev-ref HEAD`
+    - choices: branch_name, RC/\#.#, \#.#
+    - default:
+* **os_disk_size_gb**
+    - description: size of the OS disk in GB. Must be a string.
+    - default: 100
+* **sig_version** 
+    - description: SIG version to publish. Must increment if you have existing shared images (format: 0.0.0)
+* **sig_replication_regions** 
+    - description: Regions for shared image to replicate for use.
+    - default: East US, West US
+* **sig_name** 
+    - description: Name of the shared image gallery resource
+    - default: infra_testing_demo
+
+== Common problems:
+If during build process packer fails with `x509: certificate signed by unknown authority`, check your packer version
+Packer version installed by homebrew might not be working correctly with yous system ( that has been observed but might not be limited to version 1.3.3). Please download packer version corresponding to your system architecture from https://releases.hashicorp.com/packer/[here]
+
+If you have permission denied issues, be sure you have granted access to the Packer Prod SPN to your build resource group

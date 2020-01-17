@@ -1,0 +1,32 @@
+= Azure DevOps Runner
+
+Uses a pre-existing image in a Shared Image Gallery to deploy an pre-configured online ADO agent.
+
+=== Prerequisites
+
+. Initialize with `terraform init`
+. Configure `terraform.tfvars`
+
+```
+arm_subscription_id = ""
+
+arm_tenant_id = ""
+
+arm_client_id = ""
+
+arm_client_secret = ""
+
+resource_group_name = ""
+
+vault_admin_ssh_key = "ssh-rsa AAAA..."
+
+sig_subscription_id = ""
+
+network {
+  resource_group_name = ""
+}
+
+image_gallery_resource_group = ""
+```
+
+. `terraform plan` and `terraform apply`
