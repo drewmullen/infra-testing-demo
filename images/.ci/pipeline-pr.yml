@@ -54,7 +54,7 @@ jobs:
           az login --service-principal \
           -u $(ARM_CLIENT_ID) \
           -p $(ARM_CLIENT_SECRET) \
-          -t 513294a0-3e20-41b2-a970-6d30bf1546fa
+          -t $(ARM_TENANT_ID)
 
   - bash: |
           export SIG_VERSION=`cat ./images/variables-pipeline.json | jq -r '.sig_version'`
