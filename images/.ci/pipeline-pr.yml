@@ -41,7 +41,7 @@ jobs:
           cd $(system.defaultWorkingDirectory)/images
           packer build \
           -only=azure \
-          --var-file=./images/variables-pipeline.json \
+          --var-file=variables-pipeline.json \
           -var "git_ref=$(git rev-parse --abbrev-ref HEAD)" \
           -var "git_commit_sha=PRTEST-$(git rev-parse --short HEAD)" \
           -var "client_id=$(ARM_CLIENT_ID)" \
