@@ -28,7 +28,7 @@ jobs:
           sudo gem install inspec-bin ed25519 bcrypt_pbkdf --no-rdoc --no-ri inspec-bin
 
   - bash: |
-          cd $(system.defaultWorkingDirectory)/
+          cd $(system.defaultWorkingDirectory)/images
           packer build \
           -only=azure \
           --var-file=./variables-pipeline.json \
