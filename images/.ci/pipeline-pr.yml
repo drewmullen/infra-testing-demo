@@ -35,7 +35,7 @@ jobs:
           inspec check $(system.defaultWorkingDirectory)/images/tests/local/common --chef-license=accept-silent
 
   - bash: |
-          packer validate --syntax-only $(system.defaultWorkingDirectory)/images/build.json
+          packer validate --syntax-only $(system.defaultWorkingDirectory)/images/build-vault.json
 
   - bash: |
           cd $(system.defaultWorkingDirectory)/images
