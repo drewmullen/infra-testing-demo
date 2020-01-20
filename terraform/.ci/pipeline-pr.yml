@@ -1,0 +1,27 @@
+trigger: none
+# only perform builds on PRs to master
+pr:
+  autoCancel: true
+  branches:
+   include: 
+   - master
+  paths:
+   exclude:
+   - README.adoc
+
+pool:
+  vmImage: 'Ubuntu-16.04'
+
+steps:
+- task: TerraformTool@0
+  inputs:
+    version: "12.18"
+
+- bash: |
+        terraform fmt -check -diff
+  displayName: 'tf fmt check'
+
+- bash: |
+        cd network/
+        # terraform apply --auto-approve
+  displayName: 'tf apply'

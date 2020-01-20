@@ -35,7 +35,7 @@ jobs:
           inspec check $(system.defaultWorkingDirectory)/images/tests/local/common --chef-license=accept-silent
 
   - bash: |
-          packer validate --syntax-only $(system.defaultWorkingDirectory)/images/build.json
+          packer validate --syntax-only $(system.defaultWorkingDirectory)/images/build-vault.json
 
   - bash: |
           cd $(system.defaultWorkingDirectory)/images
@@ -48,7 +48,7 @@ jobs:
           -var "client_secret=$(ARM_CLIENT_SECRET)" \
           -var "build_resource_group_name=$(ARM_RESOURCE_GROUP)" \
           -var "managed_image_resource_group_name=$(ARM_RESOURCE_GROUP)" \
-          build.json
+          build-vault.json
 
   - bash: |
           az login --service-principal \

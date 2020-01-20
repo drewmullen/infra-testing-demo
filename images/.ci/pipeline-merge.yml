@@ -38,4 +38,4 @@ jobs:
           -var "client_secret=$(ARM_CLIENT_SECRET)" \
           -var "build_resource_group_name=$(ARM_RESOURCE_GROUP)" \
           -var "managed_image_resource_group_name=$(ARM_RESOURCE_GROUP)" \
-          build.json
+          build-vault.json

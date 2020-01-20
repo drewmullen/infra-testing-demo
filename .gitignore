@@ -4,7 +4,6 @@ images/variables-local.json
 **.tfvars
 **output-vagrant
 images/common
-images/build_runner.json
-images/build_copy.json
 **.tfstate*
 **.terraform
+terraform/vault/public_ip.yml
