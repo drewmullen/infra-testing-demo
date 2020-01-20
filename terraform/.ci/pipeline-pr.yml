@@ -3,25 +3,121 @@ trigger: none
 pr:
   autoCancel: true
   branches:
-   include: 
+   include:
    - master
   paths:
    exclude:
    - README.adoc
 
 pool:
-  vmImage: 'Ubuntu-16.04'
+  vmImage: 'Ubuntu-18.04'
 
 steps:
-- task: TerraformTool@0
+- task: TerraformInstaller@0
   inputs:
-    version: "12.18"
+    terraformVersion: $(TERRAFORM_VERSION)
+
+- bash: |
+        sudo apt update -y
+        sudo apt install -y ruby ruby-dev libffi-dev build-essential
+        sudo gem install inspec-bin ed25519 bcrypt_pbkdf --no-rdoc --no-ri inspec-bin
+  displayName: 'install inspec'
 
 - bash: |
         terraform fmt -check -diff
-  displayName: 'tf fmt check'
+  displayName: 'terraform fmt check'
 
 - bash: |
-        cd network/
-        # terraform apply --auto-approve
-  displayName: 'tf apply'
+        cd terraform/network/
+        echo '####TF INIT####'
+        terraform init \
+          -backend-config="storage_account_name=$(STORAGE_ACCOUNT_NAME)" \
+          -backend-config="container_name=$(CONTAINER_NAME)" \
+          -backend-config="key=network" \
+          -backend-config="resource_group_name=$(RSG)" \
+          -backend-config="arm_client_id=$(CLIENT_ID)" \
+          -backend-config="arm_client_secret=$(CLIENT_SECRET)" \
+          -backend-config="arm_subscription_id=$(SUBSCRIPTION_ID)" \
+          -backend-config="arm_tenant_id=$(TENANT_ID)"
+
+        echo '####TF APPLY####'
+        terraform apply \
+          -auto-approve \
+          -var=resource_group_name=$(RSG) \
+          -var="arm_client_id=$(CLIENT_ID)" \
+          -var="arm_client_secret=$(CLIENT_SECRET)" \
+          -var="arm_subscription_id=$(SUBSCRIPTION_ID)" \
+          -var="arm_tenant_id=$(TENANT_ID)"
+  displayName: 'terraform network/ apply'
+
+- bash: |
+        cd terraform/vault/
+        echo '####TF INIT####'
+        terraform init \
+          -backend-config="storage_account_name=$(STORAGE_ACCOUNT_NAME)" \
+          -backend-config="container_name=$(CONTAINER_NAME)" \
+          -backend-config="key=vault" \
+          -backend-config="resource_group_name=$(RSG)" \
+          -backend-config="arm_client_id=$(CLIENT_ID)" \
+          -backend-config="arm_client_secret=$(CLIENT_SECRET)" \
+          -backend-config="arm_subscription_id=$(SUBSCRIPTION_ID)" \
+          -backend-config="arm_tenant_id=$(TENANT_ID)"
+
+        echo '####TF APPLY####'
+        terraform apply \
+          -auto-approve \
+          -var=resource_group_name=$(RSG) \
+          -var="arm_client_id=$(CLIENT_ID)" \
+          -var="arm_client_secret=$(CLIENT_SECRET)" \
+          -var="arm_subscription_id=$(SUBSCRIPTION_ID)" \
+          -var="arm_tenant_id=$(TENANT_ID)" \
+          -var="storage_account_name=drewbuntudemobuild" \
+          -var="lb_type=public" \
+          -var="sig_subscription_id=$(SUBSCRIPTION_ID)" \
+          -var="environment=personal" \
+          -var="vault_image_version=$(SIG_VERSION)" \
+          -var="image_gallery_name=infra_testing_demo" \
+          -var="image_gallery_resource_group=drew-rsg" \
+          -var="vault_admin_ssh_key=$(PUB_SSH)" \
+          -var="vault_cluster_size=1" \
+          -var="public_ip_dns=$(VAULT_DNS)"
+  displayName: 'terraform vault/ apply'
+
+- bash: |
+        inspec exec $(system.defaultWorkingDirectory)/terraform/tests/health-check --chef-license=accept-silent --input-file=terraform/vault/public_ip.yml
+  displayName: 'run health-check via inspec'
+
+- bash: |
+        if [ "${SKIP_DESTROY}" != 0 ]; then
+          echo '####SKIPPING DESTROY####'
+        else
+          echo '####DESTROYING####'
+          cd terraform/vault/
+          terraform destroy \
+            -auto-approve \
+            -var=resource_group_name=$(RSG) \
+            -var="arm_client_id=$(CLIENT_ID)" \
+            -var="arm_client_secret=$(CLIENT_SECRET)" \
+            -var="arm_subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="arm_tenant_id=$(TENANT_ID)" \
+            -var="storage_account_name=drewbuntudemobuild" \
+            -var="lb_type=public" \
+            -var="sig_subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="environment=personal" \
+            -var="vault_image_version=$(SIG_VERSION)" \
+            -var="image_gallery_name=infra_testing_demo" \
+            -var="image_gallery_resource_group=drew-rsg" \
+            -var="vault_admin_ssh_key=$(PUB_SSH)" \
+            -var="vault_cluster_size=1" \
+            -var="public_ip_dns=$(VAULT_DNS)"
+
+          cd ../network
+          terraform destroy \
+            -auto-approve \
+            -var=resource_group_name=$(RSG) \
+            -var="arm_client_id=$(CLIENT_ID)" \
+            -var="arm_client_secret=$(CLIENT_SECRET)" \
+            -var="arm_subscription_id=$(SUBSCRIPTION_ID)" \
+            -var="arm_tenant_id=$(TENANT_ID)"
+        fi
+  displayName: 'terraform destroy'

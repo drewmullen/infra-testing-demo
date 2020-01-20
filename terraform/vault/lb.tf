@@ -15,12 +15,12 @@ resource "azurerm_public_ip" "azlb" {
   sku                          = var.vault_lb_sku
 }
 
-data "azurerm_public_ip" "azlb" {
-  count               = var.lb_type == "public" && var.create_load_balancer ? 1 : 0
-  name                = "${var.lb_prefix}-publicIP"
-  resource_group_name = var.resource_group_name
-  depends_on          = [azurerm_public_ip.azlb]
-}
+// data "azurerm_public_ip" "azlb" {
+//   count               = var.lb_type == "public" && var.create_load_balancer ? 1 : 0
+//   name                = "${var.lb_prefix}-publicIP"
+//   resource_group_name = var.resource_group_name
+//   depends_on          = [azurerm_public_ip.azlb]
+// }
 
 resource "azurerm_lb" "azlb" {
   count               = var.create_load_balancer ? 1 : 0
