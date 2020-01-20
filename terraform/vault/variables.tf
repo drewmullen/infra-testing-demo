@@ -70,11 +70,6 @@ variable "vault_cluster_size" {
   default     = 3
 }
 
-variable "vault_service_principal" {
-  description = "A map with `client_id` and `client_secret` with enough permissions for Vault to access the defined Azure Key Vault for Auto-Unseal"
-  type        = map(string)
-}
-
 variable "vault_unseal_secret_name" {
   default     = "vault-unseal"
   description = "This sets the name of the Azure key-vault-key used to store Hashicorp Vault's unseal keys"
@@ -126,7 +121,7 @@ variable "network" {
     cidr                = "10.0.0.0/16"
     subnet              = "10.0.2.0/24"
     subnet_name         = "subnet1"
-    resource_group_name = ""
+    resource_group_name = "drew-rsg"
   }
 }
 
@@ -174,15 +169,6 @@ variable "conf_orgunit" {
   default     = "PwCLabs"
 }
 
-variable "vault_metric_spn_secret" {
-  description = "Client secret for vault metric SPN. Must container 'Metrics Publisher' role."
-}
-
-variable "vault_metric_spn_client" {
-  description = "Client id for vault metric SPN. Must container 'Metrics Publisher' role."
-  default     = "26942bf1-8453-464c-8f7c-7da9209af6e1"
-}
-
 variable "vault_admin_user_name" {
   description = "The name of the administrator user for each instance in the cluster"
   default     = "vaultadmin"
@@ -224,7 +210,7 @@ variable "lb_tags" {
 
 variable "remote_port" {
   description = "Protocols to be used for remote vm access. [protocol, backend_port,range].  Frontend port will be automatically generated starting at 50000 and in the output."
-  default     = {}
+  default     = {ssh=["tcp","22","10"]}
 }
 
 variable "frontend_private_ip_address" {

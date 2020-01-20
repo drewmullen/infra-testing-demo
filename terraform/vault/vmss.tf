@@ -76,8 +76,8 @@ data "template_file" "vault_server_user_data" {
   vars = {
     tenant_id       = var.arm_tenant_id
     subscription_id = var.arm_subscription_id
-    client_id       = var.vault_service_principal["client_id"]
-    client_secret   = var.vault_service_principal["client_secret"]
+    client_id       = var.arm_client_id
+    client_secret   = var.arm_client_secret
     # If `keyvault_name` is empty, create one. Otherwise, use the existing value
     internal_domain           = var.internal_domain
     workspace_id              = azurerm_log_analytics_workspace.vault.workspace_id
