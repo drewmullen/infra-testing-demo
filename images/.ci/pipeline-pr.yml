@@ -32,16 +32,16 @@ jobs:
           sudo apt install jq -y
 
   - bash: |
-          inspec check $(system.defaultWorkingDirectory)/tests/local/common --chef-license=accept-silent
+          inspec check $(system.defaultWorkingDirectory)/images/tests/local/common --chef-license=accept-silent
 
   - bash: |
-          packer validate --syntax-only $(system.defaultWorkingDirectory)/build.json
+          packer validate --syntax-only $(system.defaultWorkingDirectory)/images/build.json
 
   - bash: |
-          cd $(system.defaultWorkingDirectory)
+          cd $(system.defaultWorkingDirectory)/images
           packer build \
           -only=azure \
-          --var-file=./variables-pipeline.json \
+          --var-file=variables-pipeline.json \
           -var "git_ref=$(git rev-parse --abbrev-ref HEAD)" \
           -var "git_commit_sha=PRTEST-$(git rev-parse --short HEAD)" \
           -var "client_id=$(ARM_CLIENT_ID)" \
@@ -54,10 +54,10 @@ jobs:
           az login --service-principal \
           -u $(ARM_CLIENT_ID) \
           -p $(ARM_CLIENT_SECRET) \
-          -t 513294a0-3e20-41b2-a970-6d30bf1546fa
+          -t $(ARM_TENANT_ID)
 
   - bash: |
-          export SIG_VERSION=`cat variables-pipeline.json | jq -r '.sig_version'`
+          export SIG_VERSION=`cat ./images/variables-pipeline.json | jq -r '.sig_version'`
           echo $SIG_VERSION
           az sig image-version delete \
           --subscription $(ARM_SUBSCRIPTION_ID) \
