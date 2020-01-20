@@ -15,7 +15,7 @@ pool:
 steps:
 - task: TerraformTool@0
   inputs:
-    version: $(TERRAFORM_VERSION)
+    version: "12.18"
 
 - bash: |
         terraform fmt -check -diff
