@@ -225,7 +225,7 @@ variable "frontend_private_ip_address_allocation" {
 
 variable "public_ip_address_allocation" {
   description = "(Required) Defines how an IP address is assigned. Options are Static or Dynamic."
-  default     = "static"
+  default     = "Static"
 }
 
 variable "public_ip_dns" {

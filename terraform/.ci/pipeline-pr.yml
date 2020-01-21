@@ -84,7 +84,10 @@ steps:
   displayName: 'terraform vault/ apply'
 
 - bash: |
-        inspec exec $(system.defaultWorkingDirectory)/terraform/tests/health-check --chef-license=accept-silent --input-file=terraform/vault/public_ip.yml
+        inspec exec \
+          $(system.defaultWorkingDirectory)/terraform/tests/health-check \
+          --chef-license=accept-silent \
+          --input-file=terraform/vault/public_ip.yml
   displayName: 'run health-check via inspec'
 
 - bash: |

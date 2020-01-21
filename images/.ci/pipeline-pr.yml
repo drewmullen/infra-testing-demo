@@ -8,7 +8,6 @@ pr:
   paths:
    exclude:
    - README.adoc
-   - Vagrantfile
 
 variables:
 - group: vault-packer-build
@@ -27,45 +26,56 @@ jobs:
           sudo apt update -y
           sudo apt install -y ruby ruby-dev libffi-dev build-essential
           sudo gem install inspec-bin ed25519 bcrypt_pbkdf --no-rdoc --no-ri inspec-bin
+    displayName: 'Install Inspec'
 
   - bash: |
           sudo apt install jq -y
+    displayName: 'Install JQ'
 
   - bash: |
-          inspec check $(system.defaultWorkingDirectory)/images/tests/local/common --chef-license=accept-silent
+          inspec check \
+                $(system.defaultWorkingDirectory)/images/tests/local/common \
+                --chef-license=accept-silent
+    displayName: 'Lint Inspec Code'
 
   - bash: |
-          packer validate --syntax-only $(system.defaultWorkingDirectory)/images/build-vault.json
+          packer validate \
+                --syntax-only \
+                $(system.defaultWorkingDirectory)/images/build-vault.json
+    displayName: 'Lint Packer Code'
 
   - bash: |
           cd $(system.defaultWorkingDirectory)/images
           packer build \
-          -only=azure \
-          --var-file=variables-pipeline.json \
-          -var "git_ref=$(git rev-parse --abbrev-ref HEAD)" \
-          -var "git_commit_sha=PRTEST-$(git rev-parse --short HEAD)" \
-          -var "client_id=$(ARM_CLIENT_ID)" \
-          -var "client_secret=$(ARM_CLIENT_SECRET)" \
-          -var "build_resource_group_name=$(ARM_RESOURCE_GROUP)" \
-          -var "managed_image_resource_group_name=$(ARM_RESOURCE_GROUP)" \
-          build-vault.json
+                -only=azure \
+                --var-file=variables-pipeline.json \
+                -var "git_ref=$(git rev-parse --abbrev-ref HEAD)" \
+                -var "git_commit_sha=PRTEST-$(git rev-parse --short HEAD)" \
+                -var "client_id=$(ARM_CLIENT_ID)" \
+                -var "client_secret=$(ARM_CLIENT_SECRET)" \
+                -var "build_resource_group_name=$(ARM_RESOURCE_GROUP)" \
+                -var "managed_image_resource_group_name=$(ARM_RESOURCE_GROUP)" \
+                build-vault.json
+    displayName: 'Build Vault Image with Packer'
 
   - bash: |
           az login --service-principal \
           -u $(ARM_CLIENT_ID) \
           -p $(ARM_CLIENT_SECRET) \
           -t $(ARM_TENANT_ID)
+    displayName: 'Azure Login'
 
   - bash: |
           export SIG_VERSION=`cat ./images/variables-pipeline.json | jq -r '.sig_version'`
           echo $SIG_VERSION
           az sig image-version delete \
-          --subscription $(ARM_SUBSCRIPTION_ID) \
-          --resource-group $(ARM_RESOURCE_GROUP) \
-          --gallery-name infra_testing_demo \
-          --gallery-image-definition vault \
-          --gallery-image-version $SIG_VERSION --debug
+                --subscription $(ARM_SUBSCRIPTION_ID) \
+                --resource-group $(ARM_RESOURCE_GROUP) \
+                --gallery-name infra_testing_demo \
+                --gallery-image-definition vault \
+                --gallery-image-version $SIG_VERSION --debug
           az image delete \
-          --subscription $(ARM_SUBSCRIPTION_ID) \
-          --resource-group $(ARM_RESOURCE_GROUP) \
-          -n vault-PRTEST-$(git rev-parse --short HEAD)
+                --subscription $(ARM_SUBSCRIPTION_ID) \
+                --resource-group $(ARM_RESOURCE_GROUP) \
+                -n vault-PRTEST-$(git rev-parse --short HEAD)
+    displayName: 'Delete Temporary Image'

@@ -26,6 +26,7 @@ jobs:
           sudo apt update -y
           sudo apt install -y ruby ruby-dev libffi-dev build-essential
           sudo gem install inspec-bin ed25519 bcrypt_pbkdf --no-rdoc --no-ri inspec-bin
+    displayName: 'Install Inspec'
 
   - bash: |
           cd $(system.defaultWorkingDirectory)/images
@@ -39,3 +40,4 @@ jobs:
           -var "build_resource_group_name=$(ARM_RESOURCE_GROUP)" \
           -var "managed_image_resource_group_name=$(ARM_RESOURCE_GROUP)" \
           build-vault.json
+    displayName: 'Build Vault Image with Packer'
