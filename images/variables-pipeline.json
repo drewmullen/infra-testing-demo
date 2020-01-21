@@ -4,5 +4,5 @@
     "consul_version_number": "1.6.2",
     "vault_version_number": "1.3.0",
     "sig_replication_regions": "East US",
-    "sig_version": "0.0.2"
+    "sig_version": "0.0.3"
 }
