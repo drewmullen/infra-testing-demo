@@ -9,7 +9,7 @@ resource "azurerm_public_ip" "azlb" {
   name                         = "${var.lb_prefix}-publicIP"
   location                     = var.location
   resource_group_name          = var.resource_group_name
-  public_ip_address_allocation = var.public_ip_address_allocation
+  allocation_method = var.public_ip_address_allocation
   domain_name_label            = var.public_ip_dns
   tags                         = var.lb_tags
   sku                          = var.vault_lb_sku
