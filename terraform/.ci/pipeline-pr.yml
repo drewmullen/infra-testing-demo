@@ -7,7 +7,7 @@ pr:
    - master
   paths:
    exclude:
-   - README.adoc
+   - README.md
 
 pool:
   vmImage: 'Ubuntu-18.04'
