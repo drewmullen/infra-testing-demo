@@ -2,7 +2,9 @@ services = ['vault']
 
 # tests run by packer
 
-include_controls 'packer-common'
+include_controls 'packer-common' do
+  skip_control 'telegraf_conf'
+end
 
 control 'group_and_user' do
   describe group('vault') do

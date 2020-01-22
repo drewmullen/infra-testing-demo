@@ -7,7 +7,7 @@ pr:
    - master
   paths:
    exclude:
-   - README.adoc
+   - README.md
 
 variables:
 - group: vault-packer-build
