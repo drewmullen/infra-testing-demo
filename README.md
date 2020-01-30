@@ -1,5 +1,7 @@
 # End to End Testing Immutable Infrastructure in Azure
 
+[Recorded Presentation Link](https://www.youtube.com/watch?v=vNiZbAkomr4)
+
 ## Building a local development environment
 
 Create your variables-local.json
@@ -46,4 +48,14 @@ inspec exec myprofile -t ssh://vagrant@127.0.0.1:2222 -i .vagrant/machines/defau
 
 # use provided tests
 inspec exec ../images/tests/packer/vault -t ssh://vagrant@127.0.0.1:2222 -i .vagrant/machines/default/virtualbox/private_key
+```
+
+## Outputting Inspec logs from Azure Logging via fluentbit
+
+```
+fluentbit_CL
+| where SYSLOG_IDENTIFIER_s == "inspec"
+| project TimeGenerated, Message
+| limit 10
+
 ```
